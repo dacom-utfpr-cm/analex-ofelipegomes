@@ -1,7 +1,7 @@
 from automata.fa.Moore import Moore
 import sys, os
 import re
-import xml.etree.ElementTree as ET  # Importar a biblioteca para manipulação de XML
+
 from myerror import MyError
 
 error_handler = MyError('LexerErrors')
@@ -738,69 +738,6 @@ moore = Moore(
 )
 
 
-def moore_to_jflap(states, alphabet, tokens, transitions, initial_state, outputs, output_file):
-    # Substitui '\n' por ' ' nos outputs sem modificar o dicionário original
-    sanitized_outputs = {state: outputs.get(state, '').replace('\n', ' ') for state in states}
-
-    # Cria a estrutura XML
-    structure = ET.Element('structure')
-    automaton_type = ET.SubElement(structure, 'type')
-    automaton_type.text = 'moore'
-    automaton = ET.SubElement(structure, 'automaton')
-
-    # Mapeia os estados para IDs
-    state_map = {state: str(i) for i, state in enumerate(states)}
-
-    # Adiciona os estados ao XML
-    for state in states:
-        state_element = ET.SubElement(automaton, 'state', id=state_map[state], name=state)
-        
-        # Define posições X e Y fictícias
-        x = ET.SubElement(state_element, 'x')
-        y = ET.SubElement(state_element, 'y')
-        x.text = str(100 + 150 * (int(state_map[state]) % 10))  # Posição X
-        y.text = str(100 + 150 * (int(state_map[state]) // 10))  # Posição Y
-
-        # Marca o estado inicial
-        if state == initial_state:
-            ET.SubElement(state_element, 'initial')
-
-        # Adiciona o output do estado
-        output = ET.SubElement(state_element, 'output')
-        output.text = sanitized_outputs[state]  # Garante que nunca será None
-
-    # Adiciona as transições ao XML
-    for from_state, edges in transitions.items():
-        if from_state not in state_map:
-            print(f"Erro: Estado de origem '{from_state}' não encontrado em 'states'.")
-            return  # Interrompe para evitar inconsistência no XML
-
-        for symbol, to_state in edges.items():
-            if to_state not in state_map:
-                print(f"Erro: Estado de destino '{to_state}' não encontrado em 'states'.")
-                return  # Interrompe para evitar inconsistência no XML
-
-            transition = ET.SubElement(automaton, 'transition')
-            from_element = ET.SubElement(transition, 'from')
-            to_element = ET.SubElement(transition, 'to')
-            read = ET.SubElement(transition, 'read')
-            transout = ET.SubElement(transition, 'transout')
-
-            from_element.text = state_map[from_state]
-            to_element.text = state_map[to_state]
-            read.text = symbol
-
-            # Adiciona o output associado ao estado de destino
-            transout.text = sanitized_outputs[to_state]
-
-    # Escreve o XML no arquivo
-    try:
-        tree = ET.ElementTree(structure)
-        tree.write(output_file, encoding='utf-8', xml_declaration=True)
-        print(f"Arquivo '{output_file}' gerado com sucesso!")
-    except Exception as e:
-        print(f"Erro ao gerar o arquivo XML: {e}")
-
 def main():
     check_cm = False
     check_key = False
@@ -841,110 +778,6 @@ def main():
         output = '\n'.join(separated_tokens)
 
         print(output)
-
-# Exemplo de chamada da função
-# Exemplo de chamada da função
-moore_to_jflap(
-    states=[
-        'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10', 
-        'q11', 'q12', 'q012', 'q13', 'q14', 'q15', 'q16', 'q17', 'q18', 'q19', 'q20', 
-        'q21', 'q22', 'q23', 'q24', 'q25', 'q26', 'q27', 'q28', 'q29', 'q30', 
-        'q31', 'q32', 'q33', 'q34', 'q35', 'q36', 'q37', 'q38', 'q39', 'q40', 
-        'q41', 'q42', 'q43', 'q44', 'q45', 'q46', 'q47', 'q48', 'q49', 'q50', 
-        'q51', 'q52', 'q53', 'q54', 'q55', 'q56', 'q57', 'q58', 'q59', 'q60', 
-        'q61', 'q62', 'q63', 'q64', 'q65', 'q66', 'q67', 'q68', 'q69', 'q70', 
-        'q71', 'q72', 'q73', 'q74', 'q75', 'q76', 'q77', 'q78', 'q79', 'q80', 
-        'q81', 'q82', 'q83', 'q84', 'q85', 'q86', 'q87', 'q88', 'q89', 'q90', 
-        'q91', 'q92', 'q93', 'q94', 'q95', 'q96', 'q97', 'q98', 'q99', 'q100', 'q101', 'q102', 'q103'
-    ],  # Lista de estados
-    alphabet=[
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-        '(', ')', '{', '}', ' ', '\n', '\t', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '+', '=', ';', ','
-    ],  # Alfabeto
-    tokens=[
-        'INT', 'MAIN', 'VOID', 'LPAREN', 'RPAREN', 'LBRACES', 'RBRACES', 'RETURN', 'DIFFERENT',
-        'NUMBER', 'SEMICOLON', 'FLOAT', 'COMMA', 'ATTRIBUTION', 'PLUS', 'IF', 'ELSE', 'EQUALS',
-        'LBRACKETS', 'RBRACKETS'
-    ],  # Tokens
-    transitions=moore.transitions,  # Transições
-    initial_state='q0',  # Estado inicial
-    outputs={
-        'q0': '',
-        'q1': '',
-        'q2': '',
-        'q3': 'INT',
-        'q4': '',
-        'q5': '',
-        'q6': '',
-        'q7': 'ID',
-        'q8': '',
-        'q9': '',
-        'q10': 'VOID',
-        'q11': 'LPAREN',
-        'q12': 'RPAREN',
-        'q012': '',
-        'q13': 'LBRACES',
-        'q14': 'RBRACES',
-        'q15': '',
-        'q19': 'NUMBER',
-        'q30': 'SEMICOLON',
-        'q21': '',
-        'q22': '',
-        'q23': '',
-        'q24': '',
-        'q25': '',
-        'q26': 'RETURN',
-        'q27': '',
-        'q28': '',
-        'q29': '',
-        'q34': '',
-        'q40': '',
-        'q42': '',
-        'q43': '',
-        'q41': '',
-        'q31': '',
-        'q32': '',
-        'q33': 'FLOAT',
-        'q34': '',
-        'q35': '',
-        'q50': 'PLUS',
-        'q51': '',
-        'q52': '',
-        'q55': '',
-        'q56': '',
-        'q57': '',
-        'q58': 'IF',
-        'q60': 'COMMA',
-        'q61': '',
-        'q62': '',
-        'q63': '',
-        'q64': 'ELSE',
-        'q70': '',
-        'q75': 'DIVIDE',
-        'q76': 'TIMES',
-        'q77': '',
-        'q78': 'ID RPAREN',
-        'q79': 'ID SEMICOLON',
-        'q101': '',
-        'q102': '',
-        'q103': '',
-        'q80': 'EQUALS',
-        'q81': 'ATTRIBUTION',
-        'q82': 'ID',
-        'q83': 'ID COMMA',
-        'q85': 'LBRACKETS',
-        'q86': 'RBRACKETS',
-        'q87': '',
-        'q88': '',
-        'q90': '',
-        'q91': 'DIFFERENT',
-        'q95': 'MINUS',
-        'q96': 'MINUS ID',
-        'q99': '',
-    },  # Saídas
-    output_file='jflap/moore_machine.jff'  # Arquivo de saída
-)
 
 if __name__ == "__main__":
     try:
